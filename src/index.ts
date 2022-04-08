@@ -34,7 +34,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   scene.add(light)
 
   const gltfLoader = new GLTFLoader()
-  const gltf = await gltfLoader.loadAsync('./assets/model.vrm')
+  const gltf = await gltfLoader.loadAsync('./assets/1903884660012638236.vrm')
   vrm = await VRM.from(gltf)
   vrm.scene.position.set(0, -0.8, 0)
   scene.add(vrm.scene)
