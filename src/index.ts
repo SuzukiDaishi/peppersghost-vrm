@@ -5,6 +5,9 @@ import { VRM } from '@pixiv/three-vrm'
 import { mixamoClipToVRMClip } from './VRMAnimationClip'
 import { PeppersGhostEffect } from 'three/examples/jsm/effects/PeppersGhostEffect.js'
 
+const ANIMATION = './assets/walking.fbx'
+const CHARACTER = './assets/1903884660012638236.vrm'
+
 let vrm: VRM
 let mixer: THREE.AnimationMixer
 let walk: THREE.AnimationAction
@@ -34,7 +37,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   scene.add(light)
 
   const gltfLoader = new GLTFLoader()
-  const gltf = await gltfLoader.loadAsync('./assets/1903884660012638236.vrm')
+  const gltf = await gltfLoader.loadAsync(CHARACTER)
   vrm = await VRM.from(gltf)
   vrm.scene.position.set(0, -0.8, 0)
   scene.add(vrm.scene)
@@ -45,7 +48,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   mixer = new THREE.AnimationMixer(vrm.scene)
   const fbxLoader = new FBXLoader()
-  const walkFbx = await fbxLoader.loadAsync('./assets/walking.fbx')
+  const walkFbx = await fbxLoader.loadAsync(ANIMATION)
   const walkClip = mixamoClipToVRMClip(walkFbx.animations[0], vrm, false)
   walkClip.name = 'walk'
   walk = mixer.clipAction(walkClip).setEffectiveWeight(1.0)
