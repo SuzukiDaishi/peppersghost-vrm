@@ -21,10 +21,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   const scene = new THREE.Scene()
   const camera = new THREE.OrthographicCamera(
-    -480, 
-    +480, 
-    +270, 
-    -270,
+    window.innerWidth / -2, 
+    window.innerWidth / 2, 
+    window.innerHeight / 2, 
+    window.innerHeight / -2,
     0.1, 
     1000
   )
