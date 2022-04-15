@@ -4,23 +4,66 @@ import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import { VRM } from '@pixiv/three-vrm'
 import { mixamoClipToVRMClip } from './VRMAnimationClip'
 import { PeppersGhostEffect } from 'three/examples/jsm/effects/PeppersGhostEffect.js'
+import { userVRMLoadAsync } from './UserLoader'
 
-const ANIMATION = './assets/walking.fbx'
-const CHARACTER = './assets/1903884660012638236.vrm'
+/** アニメーションファイルのパス */
+const DEFAULT_ANIMATION = './assets/xbot@Walking.fbx'
 
-let vrm: VRM
-let mixer: THREE.AnimationMixer
-let walk: THREE.AnimationAction
-let effect: PeppersGhostEffect
+/** キャラクターファイルのパス */
+const DEFAULT_CHARACTER = './assets/1903884660012638236.vrm'
 
+let vrm: VRM // VRMファイル
+let mixer: THREE.AnimationMixer // アニメーション混ぜるやつ
+let action: THREE.AnimationAction // アニメーション
+let effect: PeppersGhostEffect // ペッパーズゴーストにするやつ
+let camera: THREE.OrthographicCamera // カメラ
+let loadButton: HTMLInputElement // モデルアップロードボタン
+let actionFbxAnimation: THREE.AnimationClip
+
+// 準備ができたら実行
 window.addEventListener('DOMContentLoaded', async () => {
 
+  // レンダラー作成
   const renderer = new THREE.WebGLRenderer()
   renderer.setSize(window.innerWidth, window.innerHeight)
   document.body.appendChild(renderer.domElement)
 
+  // ユーザーVRMモデルの読み込み
+
+  // inputボタンを定義
+  loadButton = document.createElement('input')
+  loadButton.accept = '.vrm'
+  loadButton.innerText = '読み込み'
+  loadButton.type = 'file'
+
+  // ファイルが選択された時
+  loadButton.onchange = async () => {
+    if (loadButton.files !== null && loadButton.files.length>0) {
+
+      // モデル読み込み
+      scene.remove(vrm.scene)
+      vrm = await userVRMLoadAsync(loadButton.files[0])
+      vrm.scene.position.set(0, -0.8, 0)
+      scene.add(vrm.scene)
+
+      // アニメーション再ロード
+      mixer = new THREE.AnimationMixer(vrm.scene)
+      const actionClip = mixamoClipToVRMClip(actionFbxAnimation, vrm, false)
+      actionClip.name = 'action'
+      action = mixer.clipAction(actionClip).setEffectiveWeight(1.0)
+      action.setLoop(THREE.LoopRepeat, Infinity)
+      action.clampWhenFinished = true
+      action.play()
+
+    }
+  }
+  
+  // 画面が押された場合inputボタンをクリック
+  renderer.domElement.onclick = () => loadButton.click()
+
+  // シーン作成
   const scene = new THREE.Scene()
-  const camera = new THREE.OrthographicCamera(
+  camera = new THREE.OrthographicCamera(
     window.innerWidth / -2, 
     window.innerWidth / 2, 
     window.innerHeight / 2, 
@@ -29,47 +72,53 @@ window.addEventListener('DOMContentLoaded', async () => {
     1000
   )
 
-  const cameraContainer = new THREE.Object3D()
-  cameraContainer.add(camera)
-  cameraContainer.position.set(0, 0, 0)
-  scene.add(cameraContainer)
-
+  // 光源作成
   const light = new THREE.DirectionalLight(0xffffff)
   light.position.set(1, 1, 1).normalize()
   scene.add(light)
 
+  // キャラクター読み込み
   const gltfLoader = new GLTFLoader()
-  const gltf = await gltfLoader.loadAsync(CHARACTER)
+  const gltf = await gltfLoader.loadAsync(DEFAULT_CHARACTER)
   vrm = await VRM.from(gltf)
   vrm.scene.position.set(0, -0.8, 0)
   scene.add(vrm.scene)
-
-  effect = new PeppersGhostEffect( renderer );
-  effect.setSize( window.innerWidth, window.innerHeight );
-  effect.cameraDistance = 2;
-
+  
+  // アニメーション読み込み
   mixer = new THREE.AnimationMixer(vrm.scene)
   const fbxLoader = new FBXLoader()
-  const walkFbx = await fbxLoader.loadAsync(ANIMATION)
-  const walkClip = mixamoClipToVRMClip(walkFbx.animations[0], vrm, false)
-  walkClip.name = 'walk'
-  walk = mixer.clipAction(walkClip).setEffectiveWeight(1.0)
-  walk.setLoop(THREE.LoopRepeat, Infinity);
-  walk.clampWhenFinished = true
+  const actionFbx = await fbxLoader.loadAsync(DEFAULT_ANIMATION)
+  actionFbxAnimation = actionFbx.animations[0]
+  const actionClip = mixamoClipToVRMClip(actionFbx.animations[0], vrm, false)
+  actionClip.name = 'action'
+  action = mixer.clipAction(actionClip).setEffectiveWeight(1.0)
+  action.setLoop(THREE.LoopRepeat, Infinity)
+  action.clampWhenFinished = true
+  action.play()
 
-  walk.play()
+  // ペッパーズゴーストエフェクト作成
+  effect = new PeppersGhostEffect(renderer)
+  effect.setSize(window.innerWidth, window.innerHeight)
+  effect.cameraDistance = 2
 
+  // メインループ
   let lastTime = new Date().getTime()
-  const tick = (): void => {
-    effect.render(scene, camera)
+  const tick = () => {
 
+    // キャラクター回転
     vrm.scene.rotation.y += 0.01
-
-    let time = new Date().getTime()
+    
+    // アニメーション
+    const time = new Date().getTime()
     mixer.update(time - lastTime)
     lastTime = time
 
-    requestAnimationFrame(tick)
+    // レンダリング
+    effect.render(scene, camera)
+
+    // フレーム更新
+    window.requestAnimationFrame(tick)
   }
   tick()
+
 })
