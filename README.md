@@ -2,6 +2,9 @@
 
 Viewed VRM model using Pepper's Ghost
 
+![IMG_2278-_1_](https://user-images.githubusercontent.com/34536327/163660880-2afcd8b6-54e9-4f34-ad9e-30c9fe3fb004.gif)
+
+
 ## debug
 ```bash
 npm run build
